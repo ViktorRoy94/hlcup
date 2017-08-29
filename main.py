@@ -4,6 +4,9 @@ import json
 import sqlite3
 import os
 
+from flask import Flask
+app = Flask(__name__)
+
 
 def uzip_data():
     # unzip data.zip to the folder
@@ -13,7 +16,7 @@ def uzip_data():
     print("complete uzip")
 
 
-def read_data():
+def read_data_to_db():
     os.remove("data/db.sqlite")
     conn = sqlite3.connect('data/db.sqlite')
     cursor = conn.cursor()
@@ -48,9 +51,16 @@ def read_data():
     conn.close()
 
 
+@app.route("/")
+def hello():
+    return "Hello World!"
+
+
 def main():
     uzip_data()
     read_data_to_db()
+
+    app.run(debug=True)
 
 if __name__ == "__main__":
     main()
