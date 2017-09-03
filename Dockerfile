@@ -2,16 +2,18 @@
 FROM python:3
 
 # Выбираем рабочую папку
-WORKDIR /usr/src/app
+WORKDIR /home/root/code/server
 
 # Устанавливаем Flaskпапку проекта
-RUN sudo apt-get install flask \
-    mkdir code && mkdir code/server
+RUN pip3 install flask 
 
 # Копируем наш исходный main.py внутрь контейнера, в папку code/server
-ADD main.py code/server
+ADD main.py data.zip /home/root/code/server/
 
 # Открываем 80-й порт наружу
 EXPOSE 80
 
+RUN ["/bin/bash", "-c", "pwd"]
+RUN ["/bin/bash", "-c", "ls", "-a"]
+RUN ["/bin/bash", "-c", "pwd"]
 CMD [ "python", "./main.py" ]
