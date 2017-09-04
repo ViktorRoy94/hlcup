@@ -3,6 +3,7 @@ import zipfile
 import json
 import sqlite3
 import os
+import re
 
 from flask import Flask
 app = Flask(__name__)
@@ -10,8 +11,7 @@ app = Flask(__name__)
 
 def uzip_data():
     # unzip data.zip to the folder
-    print(os.listdir())
-    zip_ref = zipfile.ZipFile("data.zip", 'r')
+    zip_ref = zipfile.ZipFile("/tmp/data/data.zip", 'r')
     zip_ref.extractall("")
     zip_ref.close()
     print("complete uzip")
@@ -28,28 +28,39 @@ def read_data_to_db():
 	cursor.execute(
 	    '''CREATE TABLE IF NOT EXISTS visits (id INTEGER PRIMARY KEY, location INTEGER, user INTEGER, visited_at INTEGER, mark INTEGER)''')
 	conn.commit()
+	
+	location_files = [x for x in os.listdir("data") if re.match("locations_", x)]
+	users_files = [x for x in os.listdir("data") if re.match("users_", x)]
+	visits_files = [x for x in os.listdir("data") if re.match("visits_", x)]
+	print(location_files)
+	print(users_files)
+	print(visits_files)
 
-	with open('data/locations_1.json') as loc:
-	    loc_data = json.load(loc)
-	    for location in loc_data['locations']:
-	        cursor.execute(
-	            "INSERT INTO locations VALUES (:id,:place,:country,:city,:distance)", location)
-	        conn.commit()
+	for file in location_files:
+		with open("data/" + file) as loc:
+		    loc_data = json.load(loc)
+		    for location in loc_data['locations']:
+		        cursor.execute(
+		            "INSERT INTO locations VALUES (:id,:place,:country,:city,:distance)", location)
+		        # conn.commit()
 	print("locations complete")
-	with open('data/users_1.json') as user_file:
-	    user_data = json.load(user_file)
-	    for user in user_data['users']:
-	        cursor.execute(
-	            "INSERT INTO users VALUES (:id,:email,:first_name,:last_name,:gender,:birth_date)", user)
-	        conn.commit()
+	for file in users_files:
+		with open("data/" + file) as user_file:
+		    user_data = json.load(user_file)
+		    for user in user_data['users']:
+		        cursor.execute(
+		            "INSERT INTO users VALUES (:id,:email,:first_name,:last_name,:gender,:birth_date)", user)
+		        # conn.commit()
 	print("users complete")
-	with open('data/visits_1.json') as visit_file:
-	    visit_data = json.load(visit_file)
-	    for visit in visit_data['visits']:
-	        cursor.execute(
-	            "INSERT INTO visits VALUES (:id,:location,:user,:visited_at,:mark)", visit)
-	        conn.commit()
+	for file in visits_files:
+		with open("data/" + file) as visit_file:
+		    visit_data = json.load(visit_file)
+		    for visit in visit_data['visits']:
+		        cursor.execute(
+		            "INSERT INTO visits VALUES (:id,:location,:user,:visited_at,:mark)", visit)
+		        # conn.commit()
 	print("visits complete")
+	conn.commit()
 	conn.close()
 
 
@@ -57,12 +68,21 @@ def read_data_to_db():
 def hello():
     return "Hello World!"
 
+@app.route('/locations/<int:id>')
+def show_locations(id):
+	conn = sqlite3.connect('db.sqlite')
+	cursor = conn.cursor()
+	cursor.execute('SELECT * FROM locations WHERE id=?', str(id))
+	response = cursor.fetchone()
+	print(json.loads(str(response)))
+	conn.close()
+	return 
 
 def main():
-    uzip_data()
-    read_data_to_db()
+    # uzip_data()
+    # read_data_to_db()
 
-    app.run(debug=False)
+    app.run(port=80, debug=True)
 
 if __name__ == "__main__":
     main()
