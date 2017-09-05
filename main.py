@@ -74,9 +74,10 @@ def show_locations(id):
 	cursor = conn.cursor()
 	cursor.execute('SELECT * FROM locations WHERE id=?', str(id))
 	response = cursor.fetchone()
-	print(json.loads(str(response)))
+	print(next(zip(*cursor.description)))
+	response = json.dumps(response, ensure_ascii=False)
 	conn.close()
-	return 
+	return response
 
 def main():
     # uzip_data()
