@@ -15,7 +15,4 @@ ADD data.zip /tmp/data
 # Открываем 80-й порт наружу
 EXPOSE 80
 
-RUN ["/bin/bash", "-c", "pwd"]
-RUN ["/bin/bash", "-c", "ls", "-a"]
-RUN ["/bin/bash", "-c", "pwd"]
 CMD [ "python", "./main.py" ]

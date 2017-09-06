@@ -12,7 +12,7 @@ app = Flask(__name__)
 def uzip_data():
     # unzip data.zip to the folder
     zip_ref = zipfile.ZipFile("/tmp/data/data.zip", 'r')
-    zip_ref.extractall("")
+    zip_ref.extractall("data")
     zip_ref.close()
     print("complete uzip")
 
@@ -28,7 +28,7 @@ def read_data_to_db():
 	cursor.execute(
 	    '''CREATE TABLE IF NOT EXISTS visits (id INTEGER PRIMARY KEY, location INTEGER, user INTEGER, visited_at INTEGER, mark INTEGER)''')
 	conn.commit()
-	
+	print(os.listdir("data"))
 	location_files = [x for x in os.listdir("data") if re.match("locations_", x)]
 	users_files = [x for x in os.listdir("data") if re.match("users_", x)]
 	visits_files = [x for x in os.listdir("data") if re.match("visits_", x)]
@@ -70,20 +70,23 @@ def hello():
 
 @app.route('/locations/<int:id>')
 def show_locations(id):
+	print(id)
 	conn = sqlite3.connect('db.sqlite')
 	cursor = conn.cursor()
-	cursor.execute('SELECT * FROM locations WHERE id=?', str(id))
-	response = cursor.fetchone()
-	print(next(zip(*cursor.description)))
+	cursor.execute('SELECT * FROM locations WHERE id=?', (id,))
+	names = list(map(lambda x: x[0], cursor.description))
+	response = list(cursor.fetchall()[0])
+	response = dict(zip(names, response))
 	response = json.dumps(response, ensure_ascii=False)
 	conn.close()
 	return response
 
 def main():
-    # uzip_data()
-    # read_data_to_db()
 
-    app.run(port=80, debug=True)
+    uzip_data()
+    read_data_to_db()
+
+    app.run(port=80, debug=False)
 
 if __name__ == "__main__":
     main()
