@@ -69,13 +69,48 @@ def hello():
     return "Hello World!"
 
 @app.route('/locations/<int:id>')
-def show_locations(id):
+def show_location(id):
 	print(id)
 	conn = sqlite3.connect('db.sqlite')
 	cursor = conn.cursor()
 	cursor.execute('SELECT * FROM locations WHERE id=?', (id,))
 	names = list(map(lambda x: x[0], cursor.description))
-	response = list(cursor.fetchall()[0])
+	response = cursor.fetchone()
+	if response is None:
+		return "HTTP Status Code: 404"
+	response = list(response)
+	response = dict(zip(names, response))
+	response = json.dumps(response, ensure_ascii=False)
+	conn.close()
+	return response
+
+@app.route('/users/<int:id>')
+def show_user(id):
+	print(id)
+	conn = sqlite3.connect('db.sqlite')
+	cursor = conn.cursor()
+	cursor.execute('SELECT * FROM users WHERE id=?', (id,))
+	names = list(map(lambda x: x[0], cursor.description))
+	response = cursor.fetchone()
+	if response is None:
+		return "HTTP Status Code: 404"
+	response = list(response)
+	response = dict(zip(names, response))
+	response = json.dumps(response, ensure_ascii=False)
+	conn.close()
+	return response
+
+@app.route('/visits/<int:id>')
+def show_visit(id):
+	print(id)
+	conn = sqlite3.connect('db.sqlite')
+	cursor = conn.cursor()
+	cursor.execute('SELECT * FROM visits WHERE id=?', (id,))
+	names = list(map(lambda x: x[0], cursor.description))
+	response = cursor.fetchone()
+	if response is None:
+		return "HTTP Status Code: 404"
+	response = list(response)
 	response = dict(zip(names, response))
 	response = json.dumps(response, ensure_ascii=False)
 	conn.close()
@@ -86,7 +121,7 @@ def main():
     uzip_data()
     read_data_to_db()
 
-    app.run(port=80, debug=False)
+    app.run(host='0.0.0.0', port=80, debug=False)
 
 if __name__ == "__main__":
     main()
