@@ -42,7 +42,6 @@ def read_data_to_db():
 		    for location in loc_data['locations']:
 		        cursor.execute(
 		            "INSERT INTO locations VALUES (:id,:place,:country,:city,:distance)", location)
-		        # conn.commit()
 	print("locations complete")
 	for file in users_files:
 		with open("data/" + file) as user_file:
@@ -50,7 +49,6 @@ def read_data_to_db():
 		    for user in user_data['users']:
 		        cursor.execute(
 		            "INSERT INTO users VALUES (:id,:email,:first_name,:last_name,:gender,:birth_date)", user)
-		        # conn.commit()
 	print("users complete")
 	for file in visits_files:
 		with open("data/" + file) as visit_file:
@@ -58,7 +56,6 @@ def read_data_to_db():
 		    for visit in visit_data['visits']:
 		        cursor.execute(
 		            "INSERT INTO visits VALUES (:id,:location,:user,:visited_at,:mark)", visit)
-		        # conn.commit()
 	print("visits complete")
 	conn.commit()
 	conn.close()
@@ -70,7 +67,6 @@ def hello():
 
 @app.route('/locations/<int:id>')
 def show_location(id):
-	print(id)
 	conn = sqlite3.connect('db.sqlite')
 	cursor = conn.cursor()
 	cursor.execute('SELECT * FROM locations WHERE id=?', (id,))
@@ -82,12 +78,10 @@ def show_location(id):
 	response = dict(zip(names, response))
 	response = json.dumps(response, ensure_ascii=False)
 	conn.close()
-	print(response)
 	return response
 
 @app.route('/users/<int:id>')
 def show_user(id):
-	print(id)
 	conn = sqlite3.connect('db.sqlite')
 	cursor = conn.cursor()
 	cursor.execute('SELECT * FROM users WHERE id=?', (id,))
@@ -103,7 +97,6 @@ def show_user(id):
 
 @app.route('/visits/<int:id>')
 def show_visit(id):
-	print(id)
 	conn = sqlite3.connect('db.sqlite')
 	cursor = conn.cursor()
 	cursor.execute('SELECT * FROM visits WHERE id=?', (id,))
@@ -113,6 +106,25 @@ def show_visit(id):
 		return "HTTP Status Code: 404", 404
 	response = list(response)
 	response = dict(zip(names, response))
+	response = json.dumps(response, ensure_ascii=False)
+	conn.close()
+	return response
+
+@app.route('/users/<int:id>/visits')
+def show_user_visits(id):
+	conn = sqlite3.connect('db.sqlite')
+	cursor = conn.cursor()
+	cursor.execute('SELECT * FROM visits WHERE user=?', (id,))
+	names = list(map(lambda x: x[0], cursor.description))
+	response = dict({"visits":[]})
+	for row in cursor.fetchall():
+		row_dict = dict(zip(names, row)) 
+		del row_dict["id"]
+		del row_dict["user"]
+		response["visits"].append(row_dict)
+	# if response is None:
+	# 	return "HTTP Status Code: 404", 404
+	response["visits"].sort(key=lambda x:x["visited_at"])
 	response = json.dumps(response, ensure_ascii=False)
 	conn.close()
 	return response
