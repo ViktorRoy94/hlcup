@@ -77,11 +77,12 @@ def show_location(id):
 	names = list(map(lambda x: x[0], cursor.description))
 	response = cursor.fetchone()
 	if response is None:
-		return "HTTP Status Code: 404"
+		return "HTTP Status Code: 404", 404
 	response = list(response)
 	response = dict(zip(names, response))
 	response = json.dumps(response, ensure_ascii=False)
 	conn.close()
+	print(response)
 	return response
 
 @app.route('/users/<int:id>')
@@ -93,7 +94,7 @@ def show_user(id):
 	names = list(map(lambda x: x[0], cursor.description))
 	response = cursor.fetchone()
 	if response is None:
-		return "HTTP Status Code: 404"
+		return "HTTP Status Code: 404", 404
 	response = list(response)
 	response = dict(zip(names, response))
 	response = json.dumps(response, ensure_ascii=False)
@@ -109,7 +110,7 @@ def show_visit(id):
 	names = list(map(lambda x: x[0], cursor.description))
 	response = cursor.fetchone()
 	if response is None:
-		return "HTTP Status Code: 404"
+		return "HTTP Status Code: 404", 404
 	response = list(response)
 	response = dict(zip(names, response))
 	response = json.dumps(response, ensure_ascii=False)
