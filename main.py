@@ -114,13 +114,11 @@ def show_visit(id):
 def show_user_visits(id):
 	conn = sqlite3.connect('db.sqlite')
 	cursor = conn.cursor()
-	cursor.execute('SELECT * FROM visits WHERE user=?', (id,))
+	cursor.execute('SELECT mark,visited_at,place FROM visits JOIN locations ON locations.id=visits.location WHERE user=', (id,))
 	names = list(map(lambda x: x[0], cursor.description))
 	response = dict({"visits":[]})
 	for row in cursor.fetchall():
 		row_dict = dict(zip(names, row)) 
-		del row_dict["id"]
-		del row_dict["user"]
 		response["visits"].append(row_dict)
 	# if response is None:
 	# 	return "HTTP Status Code: 404", 404
