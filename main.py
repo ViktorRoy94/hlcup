@@ -6,6 +6,7 @@ import os
 import re
 
 from flask import Flask
+from flask import request
 app = Flask(__name__)
 
 
@@ -102,6 +103,7 @@ def show_visit(id):
 	cursor.execute('SELECT * FROM visits WHERE id=?', (id,))
 	names = list(map(lambda x: x[0], cursor.description))
 	response = cursor.fetchone()
+	print("response = ",response)
 	if response is None:
 		return "HTTP Status Code: 404", 404
 	response = list(response)
@@ -112,27 +114,61 @@ def show_visit(id):
 
 @app.route('/users/<int:id>/visits')
 def show_user_visits(id):
+	print(request.args)
+	# from_date = request.args['fromDate']
+	# to_date = request.args['toDate']
+	# country = request.args['country']
+	# to_distanse = request.args['toDistanse']
+	for arg in request.args:
+		print(arg)
+		print(request.args[arg])
+	# print(from_date)
+	# print(to_date)
+	# print(country)
+	# print(to_distanse)
 	conn = sqlite3.connect('db.sqlite')
 	cursor = conn.cursor()
-	cursor.execute('SELECT mark,visited_at,place FROM visits JOIN locations ON locations.id=visits.location WHERE user=', (id,))
+	cursor.execute('''
+		SELECT mark,visited_at,place 
+		FROM visits JOIN locations ON locations.id=visits.location 
+		WHERE user=? ''', (id,))
 	names = list(map(lambda x: x[0], cursor.description))
 	response = dict({"visits":[]})
 	for row in cursor.fetchall():
-		row_dict = dict(zip(names, row)) 
-		response["visits"].append(row_dict)
-	# if response is None:
-	# 	return "HTTP Status Code: 404", 404
+		response["visits"].append(dict(zip(names, row)))
+	# # if response is None:
+	# # 	return "HTTP Status Code: 404", 404
 	response["visits"].sort(key=lambda x:x["visited_at"])
 	response = json.dumps(response, ensure_ascii=False)
 	conn.close()
 	return response
 
+# @app.route('/locations/<int:id>/avg')
+# def show_location_avg(id):
+# 	conn = sqlite3.connect('db.sqlite')
+# 	cursor = conn.cursor()
+# 	cursor.execute('SELECT mark,visited_at,place FROM visits JOIN locations ON locations.id=visits.location WHERE user=?', (id,))
+# 	names = list(map(lambda x: x[0], cursor.description))
+# 	response = dict({"visits":[]})
+# 	for row in cursor.fetchall():
+# 		response["visits"].append(dict(zip(names, row)))
+# 	# # if response is None:
+# 	# # 	return "HTTP Status Code: 404", 404
+# 	response["visits"].sort(key=lambda x:x["visited_at"])
+# 	response = json.dumps(response, ensure_ascii=False)
+# 	conn.close()
+# 	return response
+
+# @app.errorhandler(404)
+# def page_not_found(error):
+#     return "HTTP Status Code: 404", 404
+
 def main():
 
-    uzip_data()
-    read_data_to_db()
+    # uzip_data()
+    # read_data_to_db()
 
-    app.run(host='0.0.0.0', port=80, debug=False)
+    app.run(host='0.0.0.0', port=80, debug=True, threaded=True)
 
 if __name__ == "__main__":
     main()
