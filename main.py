@@ -5,7 +5,11 @@ import sqlite3
 import os
 import re
 
+from webargs import fields, validate
+from webargs.flaskparser import use_args
+
 from flask import Flask
+from flask import abort
 from flask import request
 app = Flask(__name__)
 
@@ -112,16 +116,23 @@ def show_visit(id):
 	conn.close()
 	return response
 
+
+visits_args = {
+	'fromDate' : fields.Int(),
+	'toDate' : fields.Int(),
+	'country' : fields.Str(),
+	'toDistanse' : fields.Int()
+}
+
 @app.route('/users/<int:id>/visits')
-def show_user_visits(id):
-	print(request.args)
-	# from_date = request.args['fromDate']
-	# to_date = request.args['toDate']
-	# country = request.args['country']
-	# to_distanse = request.args['toDistanse']
-	for arg in request.args:
-		print(arg)
-		print(request.args[arg])
+@use_args(visits_args)
+def show_user_visits(args, id):
+	# print(args)
+	# from_date = args['fromDate']
+	# to_date = args['toDate']
+	# country = args['country']
+	# to_distanse = args['toDistanse']
+
 	# print(from_date)
 	# print(to_date)
 	# print(country)
@@ -165,10 +176,10 @@ def show_user_visits(id):
 
 def main():
 
-    # uzip_data()
-    # read_data_to_db()
+    uzip_data()
+    read_data_to_db()
 
-    app.run(host='0.0.0.0', port=80, debug=True, threaded=True)
+    app.run(host='0.0.0.0', port=80, debug=False, threaded=True)
 
 if __name__ == "__main__":
     main()
