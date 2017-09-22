@@ -121,28 +121,46 @@ visits_args = {
 	'fromDate' : fields.Int(),
 	'toDate' : fields.Int(),
 	'country' : fields.Str(),
-	'toDistanse' : fields.Int()
+	'toDistance' : fields.Int()
 }
 
 @app.route('/users/<int:id>/visits')
 @use_args(visits_args)
 def show_user_visits(args, id):
+	from_date = 0
+	to_date = 1000000000000
+	country = None
+	to_distance = 1000000
 	# print(args)
-	# from_date = args['fromDate']
-	# to_date = args['toDate']
-	# country = args['country']
-	# to_distanse = args['toDistanse']
+	try:
+		from_date = args['fromDate']
+		to_date = args['toDate']
+		country = args['country']
+		to_distance = args['toDistance']
+	except:
+		pass
 
-	# print(from_date)
-	# print(to_date)
-	# print(country)
-	# print(to_distanse)
+	print(from_date)
+	print(to_date)
+	print(country)
+	print(to_distance)
+
 	conn = sqlite3.connect('db.sqlite')
 	cursor = conn.cursor()
-	cursor.execute('''
-		SELECT mark,visited_at,place 
-		FROM visits JOIN locations ON locations.id=visits.location 
-		WHERE user=? ''', (id,))
+	if country is None:
+		cursor.execute('''
+			SELECT mark,visited_at,place 
+			FROM visits JOIN locations ON locations.id=visits.location 
+			WHERE user=? and visited_at > ? and visited_at < ? and distance < ? ''', 
+			(id, from_date, to_date, to_distance))
+	else:
+		cursor.execute('''
+			SELECT mark,visited_at,place 
+			FROM visits JOIN locations ON locations.id=visits.location 
+			WHERE user=? and visited_at > ? and visited_at < ? and distance < ?
+						 and country = ?''', 
+			(id, from_date, to_date, to_distance, country))
+
 	names = list(map(lambda x: x[0], cursor.description))
 	response = dict({"visits":[]})
 	for row in cursor.fetchall():
