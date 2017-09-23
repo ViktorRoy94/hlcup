@@ -5,9 +5,6 @@ import sqlite3
 import os
 import re
 
-from webargs import fields, validate
-from webargs.flaskparser import use_args
-
 from flask import Flask
 from flask import abort
 from flask import request
@@ -78,7 +75,7 @@ def show_location(id):
 	names = list(map(lambda x: x[0], cursor.description))
 	response = cursor.fetchone()
 	if response is None:
-		return "HTTP Status Code: 404", 404
+		abort(404)
 	response = list(response)
 	response = dict(zip(names, response))
 	response = json.dumps(response, ensure_ascii=False)
@@ -93,7 +90,7 @@ def show_user(id):
 	names = list(map(lambda x: x[0], cursor.description))
 	response = cursor.fetchone()
 	if response is None:
-		return "HTTP Status Code: 404", 404
+		abort(404)
 	response = list(response)
 	response = dict(zip(names, response))
 	response = json.dumps(response, ensure_ascii=False)
@@ -109,7 +106,7 @@ def show_visit(id):
 	response = cursor.fetchone()
 	print("response = ",response)
 	if response is None:
-		return "HTTP Status Code: 404", 404
+		abort(404)
 	response = list(response)
 	response = dict(zip(names, response))
 	response = json.dumps(response, ensure_ascii=False)
@@ -117,56 +114,52 @@ def show_visit(id):
 	return response
 
 
-visits_args = {
-	'fromDate' : fields.Int(),
-	'toDate' : fields.Int(),
-	'country' : fields.Str(),
-	'toDistance' : fields.Int()
-}
-
 @app.route('/users/<int:id>/visits')
-@use_args(visits_args)
-def show_user_visits(args, id):
-	from_date = 0
-	to_date = 1000000000000
-	country = None
-	to_distance = 1000000
-	# print(args)
-	try:
-		from_date = args['fromDate']
-		to_date = args['toDate']
-		country = args['country']
-		to_distance = args['toDistance']
-	except:
-		pass
+def show_user_visits(id):
+	print(set(request.args.keys()))
+	args = {'fromDate':0, 'toDate':2000000000, 'country':None, 'toDistance':500}
+	print(set(args.keys()))
+	keys = set(args.keys()).intersection(set(request.args.keys()))
+	print(keys)
+	for key in keys:
+		args[key] = request.args.get(key)
+	for int_key in ['fromDate', 'toDate', 'toDistance']:
+		try:
+			args[int_key] = int(args[int_key])
+		except ValueError:
+			abort(400)
 
-	print(from_date)
-	print(to_date)
-	print(country)
-	print(to_distance)
+	if args['country']is not None and not args['country'].isalpha():
+		abort(400)
 
+	print(args)
+	
 	conn = sqlite3.connect('db.sqlite')
 	cursor = conn.cursor()
-	if country is None:
+
+	# check user id exists
+	cursor.execute(''' SELECT *	FROM visits WHERE user=?''', (id,))
+	if not cursor.fetchall():
+		abort(404)
+
+	if args['country'] is None:
 		cursor.execute('''
 			SELECT mark,visited_at,place 
 			FROM visits JOIN locations ON locations.id=visits.location 
 			WHERE user=? and visited_at > ? and visited_at < ? and distance < ? ''', 
-			(id, from_date, to_date, to_distance))
+			(id, args['fromDate'], args['toDate'], args['toDistance']))
 	else:
 		cursor.execute('''
 			SELECT mark,visited_at,place 
 			FROM visits JOIN locations ON locations.id=visits.location 
 			WHERE user=? and visited_at > ? and visited_at < ? and distance < ?
 						 and country = ?''', 
-			(id, from_date, to_date, to_distance, country))
+			(id, args['fromDate'], args['toDate'], args['toDistance'], args['country']))
 
 	names = list(map(lambda x: x[0], cursor.description))
 	response = dict({"visits":[]})
 	for row in cursor.fetchall():
 		response["visits"].append(dict(zip(names, row)))
-	# # if response is None:
-	# # 	return "HTTP Status Code: 404", 404
 	response["visits"].sort(key=lambda x:x["visited_at"])
 	response = json.dumps(response, ensure_ascii=False)
 	conn.close()
@@ -187,10 +180,6 @@ def show_user_visits(args, id):
 # 	response = json.dumps(response, ensure_ascii=False)
 # 	conn.close()
 # 	return response
-
-# @app.errorhandler(404)
-# def page_not_found(error):
-#     return "HTTP Status Code: 404", 404
 
 def main():
 
