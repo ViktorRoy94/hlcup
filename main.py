@@ -138,8 +138,9 @@ def show_user_visits(id):
 	cursor = conn.cursor()
 
 	# check user id exists
-	cursor.execute(''' SELECT *	FROM visits WHERE user=?''', (id,))
+	cursor.execute(''' SELECT *	FROM users WHERE id=?''', (id,))
 	if not cursor.fetchall():
+		print("no such user id")
 		abort(404)
 
 	if args['country'] is None:
