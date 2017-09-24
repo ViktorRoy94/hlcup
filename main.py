@@ -5,6 +5,10 @@ import sqlite3
 import os
 import re
 
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+import calendar
+
 from flask import Flask
 from flask import abort
 from flask import request
@@ -140,7 +144,6 @@ def show_user_visits(id):
 	# check user id exists
 	cursor.execute(''' SELECT *	FROM users WHERE id=?''', (id,))
 	if not cursor.fetchall():
-		print("no such user id")
 		abort(404)
 
 	if args['country'] is None:
@@ -154,7 +157,7 @@ def show_user_visits(id):
 			SELECT mark,visited_at,place 
 			FROM visits JOIN locations ON locations.id=visits.location 
 			WHERE user=? and visited_at > ? and visited_at < ? and distance < ?
-						 and country = ?''', 
+						 and country=?''', 
 			(id, args['fromDate'], args['toDate'], args['toDistance'], args['country']))
 
 	names = list(map(lambda x: x[0], cursor.description))
@@ -166,21 +169,66 @@ def show_user_visits(id):
 	conn.close()
 	return response
 
-# @app.route('/locations/<int:id>/avg')
-# def show_location_avg(id):
-# 	conn = sqlite3.connect('db.sqlite')
-# 	cursor = conn.cursor()
-# 	cursor.execute('SELECT mark,visited_at,place FROM visits JOIN locations ON locations.id=visits.location WHERE user=?', (id,))
-# 	names = list(map(lambda x: x[0], cursor.description))
-# 	response = dict({"visits":[]})
-# 	for row in cursor.fetchall():
-# 		response["visits"].append(dict(zip(names, row)))
-# 	# # if response is None:
-# 	# # 	return "HTTP Status Code: 404", 404
-# 	response["visits"].sort(key=lambda x:x["visited_at"])
-# 	response = json.dumps(response, ensure_ascii=False)
-# 	conn.close()
-# 	return response
+@app.route('/locations/<int:id>/avg')
+def show_location_avg(id):
+	print(set(request.args.keys()))
+	args = {'fromDate':0, 'toDate':2000000000, 
+			'fromAge':-1000, 'toAge':1000, 'gender':None}
+	print(set(args.keys()))
+	keys = set(args.keys()).intersection(set(request.args.keys()))
+	print(keys)
+	for key in keys:
+		args[key] = request.args.get(key)
+	for int_key in ['fromDate', 'toDate', 'fromAge', 'toAge']:
+		try:
+			args[int_key] = int(args[int_key])
+		except ValueError:
+			print("ValueError")
+			abort(400)
+
+	now = datetime.now() - relativedelta(years = args['fromAge'])
+	args['fromAge'] = calendar.timegm(now.timetuple())
+	now = datetime.now() - relativedelta(years = args['toAge'])
+	args['toAge'] = calendar.timegm(now.timetuple())
+
+	print(args['gender'])
+	if args['gender'] is not None and not (args['gender'] == 'f' or args['gender'] == 'm'):
+		abort(400)
+
+	print(args)
+
+	conn = sqlite3.connect('db.sqlite')
+	cursor = conn.cursor()
+
+	# check user id exists
+	cursor.execute(''' SELECT *	FROM locations WHERE id=?''', (id,))
+	if not cursor.fetchall():
+		abort(404)
+
+	if args['gender'] is None:
+		cursor.execute('''
+			SELECT avg(mark)
+			FROM visits JOIN users ON users.id = visits.user
+			WHERE location = ? and visited_at > ? and visited_at < ?
+							   and birth_date < ? and birth_date > ?''', 
+			(id, args['fromDate'], args['toDate'], args['fromAge'], args['toAge']))
+	else:
+		cursor.execute('''
+			SELECT avg(mark)
+			FROM visits JOIN users ON users.id = visits.user
+			WHERE location = ? and visited_at > ? and visited_at < ?
+							   and birth_date < ? and birth_date > ?
+							   and gender = ?''', 
+			(id, args['fromDate'], args['toDate'], args['fromAge'], args['toAge'], args['gender']))
+
+	response = dict({"avg":0})
+	cur = cursor.fetchone()
+	print(cur)
+	if cur[0] is not None:
+		response['avg'] = round(float(cur[0]),5)
+	response = json.dumps(response, ensure_ascii=False)
+	conn.close()
+	return response
 
 def main():
 
