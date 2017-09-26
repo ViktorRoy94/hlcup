@@ -8,7 +8,7 @@ import shutil
 def uzip_data():
     # unzip data.zip to the folder
     zip_ref = zipfile.ZipFile("/tmp/data/data.zip", 'r')
-    zip_ref.extractall("")
+    zip_ref.extractall("data")
     zip_ref.close()
     print("complete uzip")
 
