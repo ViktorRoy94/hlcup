@@ -18,8 +18,8 @@ app = Flask(__name__)
 def hello():
     return "Hello World!"
 
-@app.route('/locations/<int:id>')
-def show_location(id):
+@app.route('/locations/<int:id>', methods = ['GET'])
+def get_location(id):
 	conn = sqlite3.connect('db.sqlite')
 	cursor = conn.cursor()
 	cursor.execute('SELECT * FROM locations WHERE id=?', (id,))
@@ -33,8 +33,8 @@ def show_location(id):
 	conn.close()
 	return response
 
-@app.route('/users/<int:id>')
-def show_user(id):
+@app.route('/users/<int:id>', methods = ['GET'])
+def get_user(id):
 	conn = sqlite3.connect('db.sqlite')
 	cursor = conn.cursor()
 	cursor.execute('SELECT * FROM users WHERE id=?', (id,))
@@ -48,8 +48,8 @@ def show_user(id):
 	conn.close()
 	return response
 
-@app.route('/visits/<int:id>')
-def show_visit(id):
+@app.route('/visits/<int:id>', methods = ['GET'])
+def get_visit(id):
 	conn = sqlite3.connect('db.sqlite')
 	cursor = conn.cursor()
 	cursor.execute('SELECT * FROM visits WHERE id=?', (id,))
@@ -64,8 +64,8 @@ def show_visit(id):
 	return response
 
 
-@app.route('/users/<int:id>/visits')
-def show_user_visits(id):
+@app.route('/users/<int:id>/visits', methods = ['GET'])
+def get_user_visits(id):
 	args = {'fromDate':0, 'toDate':2000000000, 'country':None, 'toDistance':500}
 	keys = set(args.keys()).intersection(set(request.args.keys()))
 	for key in keys:
@@ -91,27 +91,28 @@ def show_user_visits(id):
 		cursor.execute('''
 			SELECT mark,visited_at,place 
 			FROM visits JOIN locations ON locations.id=visits.location 
-			WHERE user=? and visited_at > ? and visited_at < ? and distance < ? ''', 
+			WHERE user=? and visited_at > ? and visited_at < ? and distance < ?
+			ORDER BY visited_at''', 
 			(id, args['fromDate'], args['toDate'], args['toDistance']))
 	else:
 		cursor.execute('''
 			SELECT mark,visited_at,place 
 			FROM visits JOIN locations ON locations.id=visits.location 
 			WHERE user=? and visited_at > ? and visited_at < ? and distance < ?
-						 and country=?''', 
+						 and country=?
+			ORDER BY visited_at''', 
 			(id, args['fromDate'], args['toDate'], args['toDistance'], args['country']))
 
 	names = list(map(lambda x: x[0], cursor.description))
 	response = dict({"visits":[]})
 	for row in cursor.fetchall():
 		response["visits"].append(dict(zip(names, row)))
-	response["visits"].sort(key=lambda x:x["visited_at"])
 	response = json.dumps(response, ensure_ascii=False)
 	conn.close()
 	return response
 
-@app.route('/locations/<int:id>/avg')
-def show_location_avg(id):
+@app.route('/locations/<int:id>/avg', methods = ['GET'])
+def get_location_avg(id):
 	args = {'fromDate':0, 'toDate':2000000000, 
 			'fromAge':-1000, 'toAge':1000, 'gender':None}
 	keys = set(args.keys()).intersection(set(request.args.keys()))
@@ -163,5 +164,25 @@ def show_location_avg(id):
 	conn.close()
 	return response
 
+@app.route('/locations/<int:id>', methods = ['POST'])
+def set_location(id):
+	data = request.get_json()
+	print(data.keys())
+	keys = set(data.keys).intersection(set(['place', 'country', 'city', 'distance']))
+	for key in keys:
+		if key == "distance":
+			
 
-app.run(host='0.0.0.0', port=80, debug=False, threaded=True)
+	return json.dumps("{}")
+
+
+@app.route('/users/<int:id>', methods = ['POST'])
+def set_user(id):
+	pass
+
+
+@app.route('/visits/<int:id>', methods = ['POST'])
+def set_visit(id):
+	pass
+
+app.run(host='0.0.0.0', port=80, debug=True, threaded=True)
