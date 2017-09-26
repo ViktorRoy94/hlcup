@@ -75,10 +75,11 @@ def get_user_visits(id):
 			args[int_key] = int(args[int_key])
 		except ValueError:
 			abort(400)
-			
-	country = "".join(args['country'].split())
-	if args['country']is not None and not country.isalpha():
-		abort(400)
+	
+	if args['country']is not None:
+		country = "".join(args['country'].split())
+		if not country.isalpha()
+			abort(400)
 
 	conn = sqlite3.connect('db.sqlite')
 	cursor = conn.cursor()
@@ -198,64 +199,61 @@ def set_location(id):
 
 @app.route('/users/<int:id>', methods = ['POST'])
 def set_user(id):
-	# data = request.get_json()
-	# keys = set(data.keys()).intersection(set(['place', 'country', 'city', 'distance']))
-	# post_data = {}
-	# for key in keys:
-	# 	if key == 'distance':
-	# 		try:
-	# 			post_data['distance'] = int(data['distance'])
-	# 		except ValueError:
-	# 			abort(400)
-	# 	else:
-	# 		post_data[key] = data[key]
-	# 		if not post_data[key].isalpha():
-	# 			abort(400)
+	data = request.get_json()
+	keys = set(data.keys()).intersection(set(['email', 'first_name', 'last_name', 'gender', 'birth_date']))
+	post_data = {}
+	for key in keys:
+		if key == 'gender' and not (data[key] == 'm' or data[key] == 'f'):
+			abort(400)
+		if key == 'birth_date':
+			try:
+				post_data['birth_date'] = int(data['birth_date'])
+			except ValueError:
+				abort(400)
+		else:
+			post_data[key] = data[key]
+			if not post_data[key].isalpha():
+				abort(400)
 
-	# conn = sqlite3.connect('db.sqlite')
-	# cursor = conn.cursor()
-	# cursor.execute(''' SELECT *	FROM locations WHERE id=?''', (id,))
-	# if cursor.fetchone()[0] is None:
-	# 	abort(404)
-	# sql_request = ''' UPDATE locations SET '''
-	# for key in post_data.keys():
-	# 	sql_request += str(key) + ' = \'' + str(post_data[key]) + '\' '
-	# sql_request += 'WHERE id = ' + str(id)
-	# cursor.execute(sql_request)
-	# conn.commit()
-	# conn.close()
+	conn = sqlite3.connect('db.sqlite')
+	cursor = conn.cursor()
+	cursor.execute(''' SELECT *	FROM users WHERE id=?''', (id,))
+	if cursor.fetchone()[0] is None:
+		abort(404)
+	sql_request = ''' UPDATE users SET '''
+	for key in post_data.keys():
+		sql_request += str(key) + ' = \'' + str(post_data[key]) + '\' '
+	sql_request += 'WHERE id = ' + str(id)
+	cursor.execute(sql_request)
+	conn.commit()
+	conn.close()
 	return json.dumps("{}")
 
 
 @app.route('/visits/<int:id>', methods = ['POST'])
 def set_visit(id):
-	# data = request.get_json()
-	# keys = set(data.keys()).intersection(set(['place', 'country', 'city', 'distance']))
-	# post_data = {}
-	# for key in keys:
-	# 	if key == 'distance':
-	# 		try:
-	# 			post_data['distance'] = int(data['distance'])
-	# 		except ValueError:
-	# 			abort(400)
-	# 	else:
-	# 		post_data[key] = data[key]
-	# 		if not post_data[key].isalpha():
-	# 			abort(400)
+	data = request.get_json()
+	keys = set(data.keys()).intersection(set(['location', 'user', 'visited_at', 'mark']))
+	post_data = {}
+	for key in keys:
+		try:
+			post_data[key] = int(data[key])
+		except ValueError:
+			abort(400)
 
-	# conn = sqlite3.connect('db.sqlite')
-	# cursor = conn.cursor()
-	# cursor.execute(''' SELECT *	FROM locations WHERE id=?''', (id,))
-	# if cursor.fetchone()[0] is None:
-	# 	abort(404)
-	# sql_request = ''' UPDATE locations SET '''
-	# for key in post_data.keys():
-	# 	sql_request += str(key) + ' = \'' + str(post_data[key]) + '\' '
-	# sql_request += 'WHERE id = ' + str(id)
-	# cursor.execute(sql_request)
-	# conn.commit()
-	# conn.close()
+	conn = sqlite3.connect('db.sqlite')
+	cursor = conn.cursor()
+	cursor.execute(''' SELECT *	FROM visits WHERE id=?''', (id,))
+	if cursor.fetchone()[0] is None:
+		abort(404)
+	sql_request = ''' UPDATE visits SET '''
+	for key in post_data.keys():
+		sql_request += str(key) + ' = \'' + str(post_data[key]) + '\' '
+	sql_request += 'WHERE id = ' + str(id)
+	cursor.execute(sql_request)
+	conn.commit()
+	conn.close()
 	return json.dumps("{}")
 
 if __name__ == '__main__':
-	app.run(host='0.0.0.0', port=80, debug=True)
+	app.run(host='0.0.0.0', port=80, debug=False)
