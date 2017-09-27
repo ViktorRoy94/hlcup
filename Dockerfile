@@ -22,4 +22,4 @@ EXPOSE 80
 
 RUN /etc/init.d/nginx restart 
 
-CMD python ./createDB.py && gunicorn main:app -b 0.0.0.0:80 -t 300 --threads 12 -w 4
+CMD python ./createDB.py && gunicorn main:app -b 0.0.0.0:80 -t 300
