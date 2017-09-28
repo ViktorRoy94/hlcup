@@ -195,54 +195,55 @@ def set_location(id):
 	return json.dumps({})
 
 
-@app.route('/users/<int:id>', methods = ['POST'])
-def set_user(id):
+# @app.route('/users/<int:id>', methods = ['POST'])
+# def set_user(id):
+# 	data = request.get_json()
+# 	keys = set(data.keys()).intersection({'email', 'first_name', 'last_name', 'gender', 'birth_date'})
+# 	post_data = {}
+# 	for key in keys:
+# 		if key == 'gender':
+# 			post_data[key] = data[key]
+# 			if not (data[key] == 'm' or data[key] == 'f'):
+# 				abort(400)
+# 		if key == 'birth_date':
+# 			try:
+# 				post_data[key] = int(data[key])
+# 			except (ValueError, TypeError):
+# 				abort(400)
+# 		if key == 'email':
+# 			post_data[key] = data[key]
+# 			if data[key] is None or not bool(re.match(r'\b[\w.-]+?@\w+?\.\w+?\b', data[key])):
+# 				abort(400)
+# 		if key in ['first_name', 'last_name']:
+# 			post_data[key] = data[key]
+# 			if data[key] is None or not bool(re.match('[\w\s-]*$', data[key])):
+# 				abort(400)
 
-	data = request.get_json()
-	print(data)
-	keys = set(data.keys()).intersection({'email', 'first_name', 'last_name', 'gender', 'birth_date'})
-	post_data = {}
-	for key in keys:
-		if key == 'gender':
-			post_data[key] = data[key]
-			if not (data[key] == 'm' or data[key] == 'f'):
-				abort(400)
-		if key == 'birth_date':
-			try:
-				post_data[key] = int(data[key])
-			except ValueError:
-				abort(400)
-		else:
-			post_data[key] = data[key]
-			if not bool(re.match('[\w\s-]*$', post_data[key])):
-				abort(400)
-
-	conn = sqlite3.connect('db.sqlite')
-	cursor = conn.cursor()
-	cursor.execute(''' SELECT *	FROM users WHERE id=?''', (id,))
-	if cursor.fetchone() is None:
-		abort(404)
-	sql_request = ''' UPDATE users SET '''
-	for key in post_data.keys():
-		sql_request += str(key) + ' = \'' + str(post_data[key]) + '\', '
-	sql_request = sql_request[:-2]
-	sql_request += ' WHERE id = ' + str(id)
-	cursor.execute(sql_request)
-	conn.commit()
-	conn.close()
-	return json.dumps({})
+# 	conn = sqlite3.connect('db.sqlite')
+# 	cursor = conn.cursor()
+# 	cursor.execute(''' SELECT *	FROM users WHERE id=?''', (id,))
+# 	if cursor.fetchone() is None:
+# 		abort(404)
+# 	sql_request = ''' UPDATE users SET '''
+# 	for key in post_data.keys():
+# 		sql_request += str(key) + ' = \'' + str(post_data[key]) + '\', '
+# 	sql_request = sql_request[:-2]
+# 	sql_request += ' WHERE id = ' + str(id)
+# 	cursor.execute(sql_request)
+# 	conn.commit()
+# 	conn.close()
+# 	return json.dumps({})
 
 
 # @app.route('/visits/<int:id>', methods = ['POST'])
 # def set_visit(id):
 # 	data = request.get_json()
-# 	print(data)
-# 	keys = set(data.keys()).intersection({'location', 'user', 'visited_at', 'mark'})
+s# 	keys = set(data.keys()).intersection({'location', 'user', 'visited_at', 'mark'})
 # 	post_data = {}
 # 	for key in keys:
 # 		try:
 # 			post_data[key] = int(data[key])
-# 		except ValueError:
+# 		except (ValueError, TypeError):
 # 			abort(400)
 
 # 	conn = sqlite3.connect('db.sqlite')
@@ -260,79 +261,78 @@ def set_user(id):
 # 	conn.close()
 # 	return json.dumps({})
 
-@app.route('/locations/new', methods = ['POST'])
-def set_new_location():
-	data = request.get_json()
-	if set(data.keys()) != {'id','place', 'country', 'city', 'distance'}:
-		abort(400)
-	post_data = {}
-	for key in data.keys():
-		if key == 'id' or key == 'distance':
-			try:
-				post_data[key] = int(data[key])
-			except (ValueError, TypeError):
-				abort(400)
-		else:
-			post_data[key] = data[key]
-			if data[key] is None or not bool(re.match('[\w\s-]*$', data[key])):
-				abort(400)
-	conn = sqlite3.connect('db.sqlite')
-	with conn:
-		try:
-			conn.execute(
-				'''INSERT INTO locations 
-				   VALUES (:id,:place,:country,:city,:distance)''', post_data)
-		except:
-			print('here')
-			abort(400)
-	return json.dumps({})
+# @app.route('/locations/new', methods = ['POST'])
+# def set_new_location():
+# 	data = request.get_json()
+# 	if set(data.keys()) != {'id','place', 'country', 'city', 'distance'}:
+# 		abort(400)
+# 	post_data = {}
+# 	for key in data.keys():
+# 		if key == 'id' or key == 'distance':
+# 			try:
+# 				post_data[key] = int(data[key])
+# 			except (ValueError, TypeError):
+# 				abort(400)
+# 		else:
+# 			post_data[key] = data[key]
+# 			if data[key] is None or not bool(re.match('[\w\s-]*$', data[key])):
+# 				abort(400)
+# 	conn = sqlite3.connect('db.sqlite')
+# 	with conn:
+# 		try:
+# 			conn.execute(
+# 				'''INSERT INTO locations 
+# 				   VALUES (:id,:place,:country,:city,:distance)''', post_data)
+# 		except:
+# 			print('here')
+# 			abort(400)
+# 	return json.dumps({})
 
 
-@app.route('/users/new', methods = ['POST'])
-def set_new_user():
-	data = request.get_json()
-	if set(data.keys()) != {'id','email', 'first_name', 'last_name', 'gender',\
-						    'birth_date'}:
-		abort(400)
-	post_data = {}
-	for key in data.keys():
-		if key == 'gender':
-			post_data[key] = data[key]
-			if not (data[key] == 'm' or data[key] == 'f'):
-				abort(400)
-		if key == 'id' or key == 'birth_date':
-			try:
-				post_data[key] = int(data[key])
-			except ValueError:
-				abort(400)
-		if key == 'email':
-			post_data[key] = data[key]
-			if not bool(re.match(r'\b[\w.-]+?@\w+?\.\w+?\b', data[key])):
-				abort(400)
-		if key in ['first_name', 'last_name']:
-			post_data[key] = data[key]
-			if not bool(re.match('[\w\s-]*$', data[key])):
-				abort(400)
+# @app.route('/users/new', methods = ['POST'])
+# def set_new_user():
+# 	data = request.get_json()
+# 	if set(data.keys()) != {'id','email', 'first_name', 'last_name', 'gender',\
+# 						    'birth_date'}:
+# 		abort(400)
+# 	post_data = {}
+# 	for key in data.keys():
+# 		if key == 'gender':
+# 			post_data[key] = data[key]
+# 			if not (data[key] == 'm' or data[key] == 'f'):
+# 				abort(400)
+# 		if key == 'id' or key == 'birth_date':
+# 			try:
+# 				post_data[key] = int(data[key])
+# 			except (ValueError, TypeError):
+# 				abort(400)
+# 		if key == 'email':
+# 			post_data[key] = data[key]
+# 			if data[key] is None or not bool(re.match(r'\b[\w.-]+?@\w+?\.\w+?\b', data[key])):
+# 				abort(400)
+# 		if key in ['first_name', 'last_name']:
+# 			post_data[key] = data[key]
+# 			if data[key] is None or not bool(re.match('[\w\s-]*$', data[key])):
+# 				abort(400)
 
-	conn = sqlite3.connect('db.sqlite')
-	cursor = conn.cursor()
-	try:
-		cursor.execute(
-		    '''INSERT INTO users 
-		       VALUES (:id,:email,:first_name,:last_name,
-		       		   :gender,:birth_date)''', post_data)
-	except:
-		abort(400)
+# 	conn = sqlite3.connect('db.sqlite')
+# 	cursor = conn.cursor()
+# 	try:
+# 		cursor.execute(
+# 		    '''INSERT INTO users 
+# 		       VALUES (:id,:email,:first_name,:last_name,
+# 		       		   :gender,:birth_date)''', post_data)
+# 	except:
+# 		abort(400)
 
-	conn.commit()
-	conn.close()
-	return json.dumps({})
+# 	conn.commit()
+# 	conn.close()
+# 	return json.dumps({})
 
 
 # @app.route('/visits/new', methods = ['POST'])
 # def set_new_visit():
 # 	data = request.get_json()
-# 	print(data)
 # 	if set(data.keys()) != {'id','location', 'user', 'visited_at', 'mark'}:
 # 		abort(400)
 # 	post_data = {}
