@@ -238,7 +238,7 @@ def set_location(id):
 # @app.route('/visits/<int:id>', methods = ['POST'])
 # def set_visit(id):
 # 	data = request.get_json()
-s# 	keys = set(data.keys()).intersection({'location', 'user', 'visited_at', 'mark'})
+# 	keys = set(data.keys()).intersection({'location', 'user', 'visited_at', 'mark'})
 # 	post_data = {}
 # 	for key in keys:
 # 		try:
