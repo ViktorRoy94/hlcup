@@ -12,17 +12,10 @@ def uzip_data():
     zip_ref.close()
     print("complete uzip")
 
-def create_db():
-	conn = psycopg2.connect(dbname='postgres', user='postgres', host='localhost', password='everything')
-	cursor = con.cursor()
-	cursor.execute('CREATE DATABASE hlcup')
-	cursor.execute('CREATE USER hlcup_user WITH PASSWORD 8658')
-	cursor.execute('GRANT ALL PRIVILEGES ON DATABASE hlcup to hlcup_user')
-	cursor.close()
-
 def read_data_to_db():
 	# os.remove("db.sqlite")
-	conn = psycopg2.connect(dbname = hlcup, user = posgres)
+	conn = psycopg2.connect(dbname = 'hlcup', user = 'docker',\
+		password='docker', host='localhost', port='5432')
 	cursor = conn.cursor()
 	cursor.execute(
 	    '''CREATE TABLE IF NOT EXISTS locations (id INTEGER PRIMARY KEY, place text, country text, city text, distance INTEGER)''')
@@ -64,7 +57,6 @@ def read_data_to_db():
 def main():
 
     # uzip_data()
-    create_db()
     read_data_to_db()
 
 if __name__ == "__main__":
