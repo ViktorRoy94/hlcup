@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
-import sqlite3
+import psycopg2
 import os
 import re
 
@@ -19,11 +19,21 @@ app = Flask(__name__)
 def hello():
     return "Hello World!"
 
+@app.route('/test/<int:id>', methods = ['GET'])
+def test(id):
+	conn = psycopg2.connect(dbname = 'hlcup', user = 'docker',\
+		password='docker', host='localhost', port='5432')
+	cursor = conn.cursor()
+	cursor.execute('SELECT * FROM locations WHERE id=%s', (id,))
+	print(cursor.fetchone())
+	return None
+
 @app.route('/locations/<int:id>', methods = ['GET'])
 def get_location(id):
-	conn = sqlite3.connect('db.sqlite')
+	conn = psycopg2.connect(dbname = 'hlcup', user = 'docker',\
+		password='docker', host='localhost', port='5432')
 	cursor = conn.cursor()
-	cursor.execute('SELECT * FROM locations WHERE id=?', (id,))
+	cursor.execute('SELECT * FROM locations WHERE id=%s', (id,))
 	names = list(map(lambda x: x[0], cursor.description))
 	response = cursor.fetchone()
 	if response is None:
@@ -36,9 +46,10 @@ def get_location(id):
 
 @app.route('/users/<int:id>', methods = ['GET'])
 def get_user(id):
-	conn = sqlite3.connect('db.sqlite')
+	conn = psycopg2.connect(dbname = 'hlcup', user = 'docker',\
+		password='docker', host='localhost', port='5432')
 	cursor = conn.cursor()
-	cursor.execute('SELECT * FROM users WHERE id=?', (id,))
+	cursor.execute('SELECT * FROM users WHERE id=%s', (id,))
 	names = list(map(lambda x: x[0], cursor.description))
 	response = cursor.fetchone()
 	if response is None:
@@ -51,9 +62,10 @@ def get_user(id):
 
 @app.route('/visits/<int:id>', methods = ['GET'])
 def get_visit(id):
-	conn = sqlite3.connect('db.sqlite')
+	conn = psycopg2.connect(dbname = 'hlcup', user = 'docker',\
+		password='docker', host='localhost', port='5432')
 	cursor = conn.cursor()
-	cursor.execute('SELECT * FROM visits WHERE id=?', (id,))
+	cursor.execute('SELECT * FROM visits WHERE id=%s', (id,))
 	names = list(map(lambda x: x[0], cursor.description))
 	response = cursor.fetchone()
 	if response is None:
@@ -79,11 +91,12 @@ def get_user_visits(id):
 	if args['country']is not None and not bool(re.match('[\w\s-]*$', args['country'])):
 		abort(400)
 
-	conn = sqlite3.connect('db.sqlite')
+	conn = psycopg2.connect(dbname = 'hlcup', user = 'docker',\
+		password='docker', host='localhost', port='5432')
 	cursor = conn.cursor()
 
 	# check user id exists
-	cursor.execute(''' SELECT *	FROM users WHERE id=?''', (id,))
+	cursor.execute(''' SELECT *	FROM users WHERE id=%s''', (id,))
 	if not cursor.fetchall():
 		abort(404)
 
@@ -91,15 +104,15 @@ def get_user_visits(id):
 		cursor.execute('''
 			SELECT mark,visited_at,place 
 			FROM visits JOIN locations ON locations.id=visits.location 
-			WHERE user=? and visited_at > ? and visited_at < ? and distance < ?
+			WHERE user=%s and visited_at > %s and visited_at < %s and distance < %s
 			ORDER BY visited_at''', 
 			(id, args['fromDate'], args['toDate'], args['toDistance']))
 	else:
 		cursor.execute('''
 			SELECT mark,visited_at,place 
 			FROM visits JOIN locations ON locations.id=visits.location 
-			WHERE user=? and visited_at > ? and visited_at < ? and distance < ?
-						 and country=?
+			WHERE user=%s and visited_at > %s and visited_at < %s and distance < %s
+						 and country=%s
 			ORDER BY visited_at''', 
 			(id, args['fromDate'], args['toDate'], args['toDistance'], args['country']))
 
@@ -132,11 +145,12 @@ def get_location_avg(id):
 	if args['gender'] is not None and not (args['gender'] == 'f' or args['gender'] == 'm'):
 		abort(400)
 
-	conn = sqlite3.connect('db.sqlite')
+	conn = psycopg2.connect(dbname = 'hlcup', user = 'docker',\
+		password='docker', host='localhost', port='5432')
 	cursor = conn.cursor()
 
 	# check user id exists
-	cursor.execute(''' SELECT *	FROM locations WHERE id=?''', (id,))
+	cursor.execute(''' SELECT *	FROM locations WHERE id=%s''', (id,))
 	if not cursor.fetchall():
 		abort(404)
 
@@ -144,16 +158,16 @@ def get_location_avg(id):
 		cursor.execute('''
 			SELECT avg(mark)
 			FROM visits JOIN users ON users.id = visits.user
-			WHERE location = ? and visited_at > ? and visited_at < ?
-							   and birth_date < ? and birth_date > ?''', 
+			WHERE location = %s and visited_at > %s and visited_at < %s
+							   and birth_date < %s and birth_date > %s''', 
 			(id, args['fromDate'], args['toDate'], args['fromAge'], args['toAge']))
 	else:
 		cursor.execute('''
 			SELECT avg(mark)
 			FROM visits JOIN users ON users.id = visits.user
-			WHERE location = ? and visited_at > ? and visited_at < ?
-							   and birth_date < ? and birth_date > ?
-							   and gender = ?''', 
+			WHERE location = %s and visited_at > %s and visited_at < %s
+							   and birth_date < %s and birth_date > %s
+							   and gender = %s''', 
 			(id, args['fromDate'], args['toDate'], args['fromAge'], args['toAge'], args['gender']))
 
 	response = dict({"avg":0})
@@ -180,10 +194,11 @@ def set_location(id):
 			if data[key] is None or not bool(re.match('[\w\s-]*$', data[key])):
 				abort(400)
 
-	conn = sqlite3.connect('db.sqlite')
+	conn = psycopg2.connect(dbname = 'hlcup', user = 'docker',\
+		password='docker', host='localhost', port='5432')
 	with conn:
 		cursor = conn.cursor()
-		cursor.execute(''' SELECT *	FROM locations WHERE id=?''', (id,))
+		cursor.execute(''' SELECT *	FROM locations WHERE id=%s''', (id,))
 		if cursor.fetchone() is None:
 			abort(404)
 		sql_request = ''' UPDATE locations SET '''
@@ -195,166 +210,171 @@ def set_location(id):
 	return json.dumps({})
 
 
-# @app.route('/users/<int:id>', methods = ['POST'])
-# def set_user(id):
-# 	data = request.get_json()
-# 	keys = set(data.keys()).intersection({'email', 'first_name', 'last_name', 'gender', 'birth_date'})
-# 	post_data = {}
-# 	for key in keys:
-# 		if key == 'gender':
-# 			post_data[key] = data[key]
-# 			if not (data[key] == 'm' or data[key] == 'f'):
-# 				abort(400)
-# 		if key == 'birth_date':
-# 			try:
-# 				post_data[key] = int(data[key])
-# 			except (ValueError, TypeError):
-# 				abort(400)
-# 		if key == 'email':
-# 			post_data[key] = data[key]
-# 			if data[key] is None or not bool(re.match(r'\b[\w.-]+?@\w+?\.\w+?\b', data[key])):
-# 				abort(400)
-# 		if key in ['first_name', 'last_name']:
-# 			post_data[key] = data[key]
-# 			if data[key] is None or not bool(re.match('[\w\s-]*$', data[key])):
-# 				abort(400)
+@app.route('/users/<int:id>', methods = ['POST'])
+def set_user(id):
+	data = request.get_json()
+	keys = set(data.keys()).intersection({'email', 'first_name', 'last_name', 'gender', 'birth_date'})
+	post_data = {}
+	for key in keys:
+		if key == 'gender':
+			post_data[key] = data[key]
+			if not (data[key] == 'm' or data[key] == 'f'):
+				abort(400)
+		if key == 'birth_date':
+			try:
+				post_data[key] = int(data[key])
+			except (ValueError, TypeError):
+				abort(400)
+		if key == 'email':
+			post_data[key] = data[key]
+			if data[key] is None or not bool(re.match(r'\b[\w.-]+?@\w+?\.\w+?\b', data[key])):
+				abort(400)
+		if key in ['first_name', 'last_name']:
+			post_data[key] = data[key]
+			if data[key] is None or not bool(re.match('[\w\s-]*$', data[key])):
+				abort(400)
 
-# 	conn = sqlite3.connect('db.sqlite')
-# 	cursor = conn.cursor()
-# 	cursor.execute(''' SELECT *	FROM users WHERE id=?''', (id,))
-# 	if cursor.fetchone() is None:
-# 		abort(404)
-# 	sql_request = ''' UPDATE users SET '''
-# 	for key in post_data.keys():
-# 		sql_request += str(key) + ' = \'' + str(post_data[key]) + '\', '
-# 	sql_request = sql_request[:-2]
-# 	sql_request += ' WHERE id = ' + str(id)
-# 	cursor.execute(sql_request)
-# 	conn.commit()
-# 	conn.close()
-# 	return json.dumps({})
-
-
-# @app.route('/visits/<int:id>', methods = ['POST'])
-# def set_visit(id):
-# 	data = request.get_json()
-# 	keys = set(data.keys()).intersection({'location', 'user', 'visited_at', 'mark'})
-# 	post_data = {}
-# 	for key in keys:
-# 		try:
-# 			post_data[key] = int(data[key])
-# 		except (ValueError, TypeError):
-# 			abort(400)
-
-# 	conn = sqlite3.connect('db.sqlite')
-# 	cursor = conn.cursor()
-# 	cursor.execute(''' SELECT *	FROM visits WHERE id=?''', (id,))
-# 	if cursor.fetchone() is None:
-# 		abort(404)
-# 	sql_request = ''' UPDATE visits SET '''
-# 	for key in post_data.keys():
-# 		sql_request += str(key) + ' = \'' + str(post_data[key]) + '\', '
-# 	sql_request = sql_request[:-2]
-# 	sql_request += ' WHERE id = ' + str(id)
-# 	cursor.execute(sql_request)
-# 	conn.commit()
-# 	conn.close()
-# 	return json.dumps({})
-
-# @app.route('/locations/new', methods = ['POST'])
-# def set_new_location():
-# 	data = request.get_json()
-# 	if set(data.keys()) != {'id','place', 'country', 'city', 'distance'}:
-# 		abort(400)
-# 	post_data = {}
-# 	for key in data.keys():
-# 		if key == 'id' or key == 'distance':
-# 			try:
-# 				post_data[key] = int(data[key])
-# 			except (ValueError, TypeError):
-# 				abort(400)
-# 		else:
-# 			post_data[key] = data[key]
-# 			if data[key] is None or not bool(re.match('[\w\s-]*$', data[key])):
-# 				abort(400)
-# 	conn = sqlite3.connect('db.sqlite')
-# 	with conn:
-# 		try:
-# 			conn.execute(
-# 				'''INSERT INTO locations 
-# 				   VALUES (:id,:place,:country,:city,:distance)''', post_data)
-# 		except:
-# 			print('here')
-# 			abort(400)
-# 	return json.dumps({})
+	conn = psycopg2.connect(dbname = 'hlcup', user = 'docker',\
+		password='docker', host='localhost', port='5432')
+	cursor = conn.cursor()
+	cursor.execute(''' SELECT *	FROM users WHERE id=%s''', (id,))
+	if cursor.fetchone() is None:
+		abort(404)
+	sql_request = ''' UPDATE users SET '''
+	for key in post_data.keys():
+		sql_request += str(key) + ' = \'' + str(post_data[key]) + '\', '
+	sql_request = sql_request[:-2]
+	sql_request += ' WHERE id = ' + str(id)
+	cursor.execute(sql_request)
+	conn.commit()
+	conn.close()
+	return json.dumps({})
 
 
-# @app.route('/users/new', methods = ['POST'])
-# def set_new_user():
-# 	data = request.get_json()
-# 	if set(data.keys()) != {'id','email', 'first_name', 'last_name', 'gender',\
-# 						    'birth_date'}:
-# 		abort(400)
-# 	post_data = {}
-# 	for key in data.keys():
-# 		if key == 'gender':
-# 			post_data[key] = data[key]
-# 			if not (data[key] == 'm' or data[key] == 'f'):
-# 				abort(400)
-# 		if key == 'id' or key == 'birth_date':
-# 			try:
-# 				post_data[key] = int(data[key])
-# 			except (ValueError, TypeError):
-# 				abort(400)
-# 		if key == 'email':
-# 			post_data[key] = data[key]
-# 			if data[key] is None or not bool(re.match(r'\b[\w.-]+?@\w+?\.\w+?\b', data[key])):
-# 				abort(400)
-# 		if key in ['first_name', 'last_name']:
-# 			post_data[key] = data[key]
-# 			if data[key] is None or not bool(re.match('[\w\s-]*$', data[key])):
-# 				abort(400)
+@app.route('/visits/<int:id>', methods = ['POST'])
+def set_visit(id):
+	data = request.get_json()
+	keys = set(data.keys()).intersection({'location', 'user', 'visited_at', 'mark'})
+	post_data = {}
+	for key in keys:
+		try:
+			post_data[key] = int(data[key])
+		except (ValueError, TypeError):
+			abort(400)
 
-# 	conn = sqlite3.connect('db.sqlite')
-# 	cursor = conn.cursor()
-# 	try:
-# 		cursor.execute(
-# 		    '''INSERT INTO users 
-# 		       VALUES (:id,:email,:first_name,:last_name,
-# 		       		   :gender,:birth_date)''', post_data)
-# 	except:
-# 		abort(400)
+	conn = psycopg2.connect(dbname = 'hlcup', user = 'docker',\
+		password='docker', host='localhost', port='5432')
+	cursor = conn.cursor()
+	cursor.execute(''' SELECT *	FROM visits WHERE id=%s''', (id,))
+	if cursor.fetchone() is None:
+		abort(404)
+	sql_request = ''' UPDATE visits SET '''
+	for key in post_data.keys():
+		sql_request += str(key) + ' = \'' + str(post_data[key]) + '\', '
+	sql_request = sql_request[:-2]
+	sql_request += ' WHERE id = ' + str(id)
+	cursor.execute(sql_request)
+	conn.commit()
+	conn.close()
+	return json.dumps({})
 
-# 	conn.commit()
-# 	conn.close()
-# 	return json.dumps({})
+@app.route('/locations/new', methods = ['POST'])
+def set_new_location():
+	data = request.get_json()
+	if set(data.keys()) != {'id','place', 'country', 'city', 'distance'}:
+		abort(400)
+	post_data = {}
+	for key in data.keys():
+		if key == 'id' or key == 'distance':
+			try:
+				post_data[key] = int(data[key])
+			except (ValueError, TypeError):
+				abort(400)
+		else:
+			post_data[key] = data[key]
+			if data[key] is None or not bool(re.match('[\w\s-]*$', data[key])):
+				abort(400)
+	conn = psycopg2.connect(dbname = 'hlcup', user = 'docker',\
+		password='docker', host='localhost', port='5432')
+	with conn:
+		try:
+			conn.execute(
+				'''INSERT INTO locations 
+				   VALUES (:id,:place,:country,:city,:distance)''', post_data)
+		except:
+			print('here')
+			abort(400)
+	return json.dumps({})
 
 
-# @app.route('/visits/new', methods = ['POST'])
-# def set_new_visit():
-# 	data = request.get_json()
-# 	if set(data.keys()) != {'id','location', 'user', 'visited_at', 'mark'}:
-# 		abort(400)
-# 	post_data = {}
-# 	for key in data.keys():
-# 		try:
-# 			post_data[key] = int(data[key])
-# 		except (ValueError, TypeError):
-# 			abort(400)
+@app.route('/users/new', methods = ['POST'])
+def set_new_user():
+	data = request.get_json()
+	if set(data.keys()) != {'id','email', 'first_name', 'last_name', 'gender',\
+						    'birth_date'}:
+		abort(400)
+	post_data = {}
+	for key in data.keys():
+		if key == 'gender':
+			post_data[key] = data[key]
+			if not (data[key] == 'm' or data[key] == 'f'):
+				abort(400)
+		if key == 'id' or key == 'birth_date':
+			try:
+				post_data[key] = int(data[key])
+			except (ValueError, TypeError):
+				abort(400)
+		if key == 'email':
+			post_data[key] = data[key]
+			if data[key] is None or not bool(re.match(r'\b[\w.-]+?@\w+?\.\w+?\b', data[key])):
+				abort(400)
+		if key in ['first_name', 'last_name']:
+			post_data[key] = data[key]
+			if data[key] is None or not bool(re.match('[\w\s-]*$', data[key])):
+				abort(400)
 
-# 	conn = sqlite3.connect('db.sqlite')
-# 	cursor = conn.cursor()
+	conn = psycopg2.connect(dbname = 'hlcup', user = 'docker',\
+		password='docker', host='localhost', port='5432')
+	cursor = conn.cursor()
+	try:
+		cursor.execute(
+		    '''INSERT INTO users 
+		       VALUES (:id,:email,:first_name,:last_name,
+		       		   :gender,:birth_date)''', post_data)
+	except:
+		abort(400)
 
-# 	try:
-# 		cursor.execute(
-# 		    '''INSERT INTO visits 
-# 		       VALUES (:id,:location,:user,:visited_at,:mark)''', post_data)
-# 	except:
-# 		abort(400)
+	conn.commit()
+	conn.close()
+	return json.dumps({})
 
-# 	conn.commit()
-# 	conn.close()
-# 	return json.dumps({})
+
+@app.route('/visits/new', methods = ['POST'])
+def set_new_visit():
+	data = request.get_json()
+	if set(data.keys()) != {'id','location', 'user', 'visited_at', 'mark'}:
+		abort(400)
+	post_data = {}
+	for key in data.keys():
+		try:
+			post_data[key] = int(data[key])
+		except (ValueError, TypeError):
+			abort(400)
+
+	conn = psycopg2.connect(dbname = 'hlcup', user = 'docker',\
+		password='docker', host='localhost', port='5432')
+	cursor = conn.cursor()
+
+	try:
+		cursor.execute(
+		    '''INSERT INTO visits 
+		       VALUES (:id,:location,:user,:visited_at,:mark)''', post_data)
+	except:
+		abort(400)
+
+	conn.commit()
+	conn.close()
+	return json.dumps({})
 
 if __name__ == '__main__':
 	app.run(host='0.0.0.0', port=80, debug=False, threaded = True)
